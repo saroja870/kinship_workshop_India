@@ -1,0 +1,487 @@
+---
+title: "Kinship Dynamics: Concept, Modelling, and Applications"
+subtitle: "National University of Singapore, Singapore, February 5, 2025"
+author: "Instructors: Diego Alburez-Gutierrez & Sha Jiang"
+date: "Updated: `r Sys.Date()`"
+output:
+  html_document:
+    # toc_depth: 2
+    toc_float: true
+    # number_sections: true
+    theme: readable
+    highlight: pygments
+    # code_folding: hide
+bibliography: kinship.bib
+---
+
+```{r 1 setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.align='center')
+
+# Prevent scientific notation (useful for the rate calculation)
+options(scipen=999999)
+```
+
+
+# {.tabset}
+## Introduction 
+
+### Preparation
+
+Please make sure to complete the following preparatory steps before the training workshop:
+
+1. If you haven't already, install R and RStudio. This is a useful tutorial: https://rstudio-education.github.io/hopr/starting.html 
+1. Install the following packages in R:
+
+```{r = installs, eval=FALSE}
+install.packages("tidyverse")
+# install.packages("devtools")
+devtools::install_github("IvanWilli/DemoKin")
+```
+
+1. Download the workshop's GitHub repository to your computer: https://github.com/alburezg/kinship_workshop_NUS. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
+
+![](download.JPG){width=800px}
+
+
+## Part 1: Simple models
+
+### Course description:
+
+Kinship is a fundamental property of human populations and a key form of social structure.
+Demographers have long been interested in the interplay between demographic change and family configuration.
+This has led to the development of sophisticated methodological and conceptual approaches for the study of kinship, some of which are reviewed in this course. 
+
+### 1. Installation
+
+DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), but we'll use the development version on [GitHub](https://github.com/IvanWilli/DemoKin):
+
+```{r, eval=FALSE}
+# install.packages("devtools")
+devtools::install_github("IvanWilli/DemoKin")
+```
+
+Load packages that will be useful:
+
+```{r, warning=F, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(DemoKin)
+```
+
+### 2. Demographic data
+
+We will use data for Singapore from the [2024 Revision of the World Population Prospects](https://population.un.org/wpp/), which we pre-processed for this workshop.
+
+```{r, warning=FALSE, message=FALSE}
+#Load data for women
+rates_female <- read.csv("data/col_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female population (N)
+# For data for men
+rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
+```
+
+Let's see what data we will be using. The first object is `rates_female`, a long-format data frame with year- and age-specific fertility rates ('fx') and survival probabilities from a life table ('px'). 
+
+For women:
+
+```{r, warning=FALSE, message=FALSE}
+head(rates_female)
+```
+
+Let us visualise some of our demographic data. 
+We start with the probability of dying between ages $x$ and $x+1$,$q_x$ in a life table for women:
+
+```{r}
+rates_female %>%
+    filter(year %in% seq(1950, 2020, 30)) %>% 
+    mutate(qx = 1-px) %>%
+    ggplot() +
+    geom_line(aes(x = age, y = qx, col = as.character(year)), linewidth = 1) +
+    scale_y_log10() +
+    labs(y = "Probability of dying, qx", col = NULL) +
+    theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+Next, we have age-specific fertility rates for multiple years:
+
+```{r}
+rates_female %>%
+  filter(year %in% seq(1950, 2020, 30)) %>% 
+  ggplot() + 
+  geom_line(aes(x = age, y = fx, col = as.character(year)), linewidth = 1) +
+  labs(y = "Age-specific fertility rate, fx", col = NULL) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+Finally, we have the population counts:
+
+```{r}
+pop_female %>%
+  mutate(age = 0:100) %>% 
+  pivot_longer(-age, names_to = "year", values_to = "pop") %>% 
+  mutate(year = gsub("X", "", year)) %>% 
+  filter(year %in% seq(1950, 2020, 30)) %>% 
+  ggplot() + 
+  geom_line(aes(x = age, y = pop, col = as.character(year)), linewidth = 1) +
+  labs(y = "Population alive in thousands", col = NULL) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+### 3. The DemoKin package
+
+`DemoKin` can be used to compute the number and age distribution of Focal's relatives under a range of assumptions, including living and deceased kin. Let's explore the main functions.
+
+#### 3.1. The function `kin()`
+
+The function `DemoKin::kin()` currently does most of the heavy lifting in terms of implementing matrix kinship models.
+
+For this example, we will run the simplest model, with the following assumptions: 
+
+1. Rates are **time-invariant**; i.e., the same set of rates apply at all times. For this example, these will be the 2020 rates.
+1. The population has one **one-sex**; i.e., we only use female data as input and trace descent through female lines.
+
+First, we need to extract the data for women in 2020 and save it as a matrix:
+
+```{r 21}
+# First, reshape fertility and survival for a given year
+
+asfr_2020 <- rates_female %>%
+  filter(year == 2020) %>% 
+  select(age, year, fx) %>%
+  pivot_wider(names_from = year, values_from = fx) %>%
+  select(-age) %>%
+  as.matrix()
+
+surv_2020 <- rates_female %>%
+  filter(year == 2020) %>% 
+  select(age, year, px) %>%
+  pivot_wider(names_from = year, values_from = px) %>%
+  select(-age) %>%
+  as.matrix()
+```
+
+Now we can run the kinship models:
+
+```{r 22}
+kin_2020 <- kin(p = surv_2020, f = asfr_2020, time_invariant = TRUE)
+```
+
+#### 3.2. Arguments of `kin()`
+
+- **p** numeric. A vector (atomic) or matrix of survival probabilities with rows as ages (and columns as years in case of matrix).
+- **f** numeric. Same as U but for fertility rates.
+- **time_invariant** logical. Assume time-invariant rates. Default TRUE.
+- **output_kin** character. kin types to return: "m" for mother, "d" for daughter, ...
+
+#### 3.3 Relative types
+
+Relatives for the `output_kin` argument are identified by a unique code.
+Note that the relationship codes used in `DemoKin` differ from those in Caswell [-@caswell_formal_2019]. 
+The equivalence between the two set of codes is given in the following table:
+
+```{r 23}
+demokin_codes
+```
+
+#### 3.4. Value
+
+`DemoKin::kin()` returns a list containing two data frames: `kin_full` and `kin_summary`. 
+
+```{r 24}
+str(kin_2020)
+```
+
+##### `kin_full` 
+
+This data frame contains expected kin counts by year (or cohort), age of Focal, type of kin and, age of kin, including living and dead kin at that age.
+
+```{r 25}
+head(kin_2020$kin_full)
+```
+
+##### `kin_summary`
+
+This is a 'summary' data frame derived from `kin_full`. To produce it, we sum over all ages of kin to produce a data frame of expected kin counts by year or cohort and age of Focal (but *not* by age of kin). 
+This is how the `kin_summary` object is derived:
+
+```{r 26, message=F}
+
+kin_by_age_focal <- 
+  kin_2020$kin_full %>% 
+  group_by(kin, age_focal) %>% 
+  summarise(count = sum(living)) %>% 
+  ungroup()
+
+# Check that they are identical (for living kin only here)
+
+kin_by_age_focal %>% 
+  select(kin, age_focal, count) %>% 
+  identical(
+    kin_2020$kin_summary %>% 
+      select(kin, age_focal, count = count_living) %>% 
+      arrange(kin, age_focal)
+  )
+```
+
+#### 3.2. Kinship diagrams
+
+We can visualize the kinship structure we just computed using a network or 'Keyfitz' kinship diagram [@Keyfitz2005] with the `plot_diagram` function. 
+Let's see the expected number of living kin for a 65 yo woman in Singapore according to our model:
+
+```{r 10, fig.height=10, fig.width=12}
+kin_2020$kin_summary %>% 
+  filter(age_focal == 65) %>% 
+  select(kin, count = count_living) %>% 
+  plot_diagram(rounding = 2)
+```
+
+## Part 2: Two-sex models
+
+Human males generally live shorter and reproduce later than females. 
+These sex-specific processes affect kinship dynamics in a number of ways. 
+For example, the degree to which an average member of the population, call her Focal, has a living grandparent is affected by differential mortality affecting the parental generation at older ages. 
+We may also be interested in considering how kinship structures vary by Focal's sex: a male Focal may have a different number of grandchildren than a female Focal given differences in fertility by sex. 
+Documenting these differences matters since women often face greater expectations to provide support and informal care to relatives.
+As they live longer, they may find themselves at greater risk of being having no living kin.
+The function `kin2sex` implements two-sex kinship models as introduced by Caswell [-@caswell_formal_2022]. 
+
+### 1. Setup
+
+Load packages: 
+
+```{r 3, warning=F, message=FALSE}
+# Packages
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(DemoKin)
+```
+
+Load male and female data:
+
+```{r, warning=F, message=FALSE}
+# Data
+#Load data for women
+rates_female <- read.csv("data/col_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female population (N)
+# For data for men
+rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
+```
+
+Note that for men there is no `fx` (fertility) column because the WPP does not provide it:
+
+```{r, warning=FALSE, message=FALSE}
+head(rates_male)
+```
+
+### 2. Run kinship model
+
+#### 2.1. Convert data to matrices
+
+Before running the model, we need to reshape the data to have matrices as input. 
+
+```{r 40, message=FALSE, warning=FALSE }
+# Female fertility
+asfr_females <- 
+  rates_female %>%
+  select(age, year, fx) %>%
+  pivot_wider(names_from = year, values_from = fx) %>%
+  select(-age) %>%
+  as.matrix()
+
+# Female survival
+surv_females <- 
+  rates_female %>%
+  select(age, year, px) %>%
+  pivot_wider(names_from = year, values_from = px) %>%
+  select(-age) %>%
+  as.matrix()
+
+# Male survival
+surv_males <- 
+  rates_male %>%
+  select(age, year, px) %>%
+  pivot_wider(names_from = year, values_from = px) %>%
+  select(-age) %>%
+  as.matrix()
+
+```
+
+The data now has years in columns and ages in rows. For example, male survival probabilities:
+
+```{r}
+surv_males[1:10, 1:6]
+```
+
+#### 2.2. Run model
+
+```{r}
+kin_out <- 
+  kin2sex(
+    # Survival probabilities of women
+    pf = surv_females
+    # Survival probabilities of men
+    , pm = surv_males
+    # Fertility rates for women
+    , ff = asfr_females
+    # Fertility rates for men (in this example, we use female rates)
+    , fm = asfr_females
+    # Female population counts
+    , nf = pop_female
+    # Male population counts
+    , nm = pop_male
+    # If FALSE, rates vary over time
+    , time_invariant = FALSE
+    # Which kin you want estimates for (see demokin_codes)
+    , output_kin = c("c", "d", "gd", "ggd", "ggm", "gm", "m", "n", "a", "s")
+    # The sex of the Focal or anchor invididual
+    , sex_focal = "f"
+    ) 
+```
+
+#### 2.3. Model assumptions
+
+Our model assumes that: 
+
+1. Rates vary over time (time-variant)
+1. There are two sexes in the population (two-sex)
+1. ***However**, since we don't have male fertility data from the UNWPP, we assume that male fertility is equivalent to female fertility (androgynous assumption)
+1. Demographic rates are stable (time-invariant) before 1950 (the earliest observed data point) 
+
+### 3. Kinship structures
+
+The value returned by `kin2sex` is equivalent to the one returned by `kin`, with a couple new columns:
+
+- `sex_kin` that distinguishes between male and female kin
+- `year`: period (calendar) year
+- `cohort`: birth cohort of Focal
+
+```{r}
+head(kin_out$kin_summary)
+```
+
+> A note on terminology:
+The `kin2sex` function uses the same codes as `kin` to identify relatives (see `demokin_codes()` for reference).  
+Please note that when running a two-sex model, the code "m" refers to either mothers or fathers!  
+Use the `sex_kin` column to filter by the sex of a specific relative.  
+For example, to consider only sons and ignore daughters, use:  
+
+```{r}
+kin_out$kin_summary %>%
+  filter(kin == "d", sex_kin == "m") %>%
+  head()
+```
+
+The two sex model provides kinship estimates by age, period, and birth cohort (of Focal) [-@caswell_formal_2019]:
+
+![](apc.png)
+
+### 3.1. Cohort approach
+
+Let's take a look at the resulting kin counts for a Focal born in 1960.
+First, we plot total family size over the life course of Focal for all kin and irrespective of the sex of kin:
+
+```{r}
+kin_out$kin_summary %>%
+  filter(cohort == 1960) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count_living), .by = c(kin_label, age_focal)) %>%
+  ggplot(aes(age_focal, count, fill=kin_label)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of living kin by sex and Focal's age",
+       x = "Age of a Focal born 1960") +
+  theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+Now, we see the distribution of kin by sex of kin for a subset of kin:
+
+```{r}
+kin_out$kin_summary %>%
+  filter(cohort == 1960) %>% 
+  filter(kin%in% c("d", "gd", "m", "s")) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count_living), .by = c(kin_label, age_focal, sex_kin)) %>%
+  ggplot(aes(age_focal, count, fill=sex_kin)) +
+  geom_area() +
+  theme_bw() +
+  labs(y = "Expected number of living kin by sex and Focal's age",
+       x = "Age of a Focal born 1960",
+       fill = "Sex of Kin") +
+  facet_wrap(~kin_label, scales = "free_y")
+```
+
+### 3.2. Period Approach
+
+Let us take a `snapshot` of the kin distribution in 2023.
+We can plot total family size over the life course of Focal for all kin and irrespective of the sex of kin:
+
+```{r}
+kin_out$kin_summary %>%
+  filter(year == 2023) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count_living), .by = c(kin_label, age_focal)) %>%
+  ggplot(aes(age_focal, count, fill=kin_label)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of living kin by sex and Focal's age",
+       x = "Age of Focal") +
+  theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+Next, let's plot the number of kin over the life of Focal including the sex of kin for a selected number of kin:
+
+```{r}
+kin_out$kin_summary %>%
+  filter(year == 2023) %>% 
+  filter(kin%in% c("d", "gd", "m", "s")) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count_living), .by = c(kin_label, age_focal, sex_kin)) %>%
+  ggplot(aes(age_focal, count, fill=sex_kin)) +
+  geom_area() +
+  theme_bw() +
+  labs(y = "Expected number of living kin by sex and Focal's age",
+       x = "Age of Focal",
+       fill = "Sex of Kin") +
+  facet_wrap(~kin_label, scales = "free_y")
+```
+
+## Part 3: Projections
+
+### 1. Setup
+
+Load packages: 
+
+```{r, warning=F, message=FALSE}
+# Packages
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(DemoKin)
+```
+
+Load male and female data:
+
+```{r, warning=F, message=FALSE}
+# Data
+#Load data for women
+rates_female <- read.csv("data/col_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female population (N)
+# For data for men
+rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
+```
+
+
+
+## References
+

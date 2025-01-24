@@ -1,15 +1,16 @@
-## Materials for course 'Kinship Structures'
+## Materials for training workshop 'Kinship Dynamics: Concept, Modelling, and Applications'
 
-European Doctoral School of Demography (EDSD)
+National University of Singapore
 
-Paris, November 18-21, 2024
+Singapore, February 5, 2025
 
 **Instructors:**
 
-Diego Alburez-Gutierrez & Amanda Martins de Almeida
+Diego Alburez-Gutierrez^1^ & Sha Jiang^1,2^
 
-Kinship Inequalities Research Group
+^1^Kinship Inequalities Research Group
+^2^Department of Digital and Computational Demography
 
 Max Planck Institute for Demographic Research
 
-To deploy, visit: https://amandamartinsal.github.io/EDSD_kinship_24-25
+**To deploy, visit: https://alburez.me/kinship_workshop_NUS/**
