@@ -36,7 +36,9 @@ Please make sure to complete the following preparatory steps before the training
 1. Install the following packages in R:
 
 ```{r = installs, eval=FALSE}
-install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
 # install.packages("devtools")
 devtools::install_github("IvanWilli/DemoKin")
 ```
@@ -47,8 +49,6 @@ devtools::install_github("IvanWilli/DemoKin")
 
 
 ## Part 1: Simple models
-
-### Course description:
 
 Kinship is a fundamental property of human populations and a key form of social structure.
 Demographers have long been interested in the interplay between demographic change and family configuration.
@@ -381,7 +381,7 @@ kin_out$kin_summary %>%
   head()
 ```
 
-The two sex model provides kinship estimates by age, period, and birth cohort (of Focal) [-@caswell_formal_2019]:
+The two sex model provides kinship estimates by age, period, and birth cohort (of Focal) [@caswell_formal_2019]:
 
 ![](apc.png)
 
