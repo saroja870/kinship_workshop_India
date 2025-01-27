@@ -179,7 +179,7 @@ surv_2020 <- rates_female %>%
 
 Now we can run the kinship models:
 
-```{r 22}
+```{r}
 kin_2020 <- kin(p = surv_2020, f = asfr_2020, time_invariant = TRUE)
 ```
 
@@ -250,6 +250,73 @@ kin_2020$kin_summary %>%
   filter(age_focal == 65) %>% 
   select(kin, count = count_living) %>% 
   plot_diagram(rounding = 2)
+```
+
+#### 3.3. Number of living kin
+
+Let's run the model again with the same parameters, selecting specific kin types (note the `output_kin` argument:
+
+```{r 22}
+kin_2020 <- 
+  kin(
+    p = surv_2020
+    , f = asfr_2020
+    , output_kin = c("c", "d", "gd", "ggd", "gm", "m", "n", "a", "s")
+    , time_invariant = TRUE
+    )
+```
+
+Now, let's visualize how the expected number of daughters, siblings, cousins, etc., changes over the life course of Focal (now, with full names to identify each relative type using the function `DemoKin::rename_kin()`).
+
+```{r 28, fig.height=6, fig.width=8}
+kin_2020$kin_summary %>%
+  rename_kin() %>%
+  ggplot() +
+  geom_line(aes(age_focal, count_living))  +
+  theme_bw() +
+  labs(x = "Age of focal", y= "Number of living female relatives") +
+  facet_wrap(~kin_label)
+```
+
+> Note that we are working in a time invariant framework. You can think of the results as analogous to life expectancy (i.e., expected years of life for a synthetic cohort experiencing a given set of period mortality rates).
+
+How does overall family size (and family composition) vary over life for an average woman who survives to each age?
+
+```{r 29}
+counts <- 
+  kin_2020$kin_summary %>%
+  group_by(age_focal) %>% 
+  summarise(count_living = sum(count_living)) %>% 
+  ungroup()
+
+kin_2020$kin_summary %>%
+  select(age_focal, kin, count_living) %>% 
+  rename_kin() %>% 
+  ggplot(aes(x = age_focal, y = count_living)) +
+  geom_area(aes(fill = kin_label), colour = "black") +
+  geom_line(data = counts, size = 2) +
+  labs(x = "Age of focal",
+       y = "Number of living female relatives",
+       fill = "Kin") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+#### 3.4 Age distribution of living kin
+
+How old are Focal's relatives? Using the `kin_full` data frame, we can visualize the age distribution of Focal's relatives throughout Focal's life. For example when Focal is 65 (the red vertical line in the plot), what are the ages of her relatives:
+
+```{r 30, fig.height=6, fig.width=8}
+kin_2020$kin_full %>%
+  rename_kin() %>%
+  filter(age_focal == 65) %>%
+  ggplot(aes(age_kin, living)) +
+  geom_line() +
+  geom_vline(xintercept = 65, colour = "red") +
+  labs(x = "Age of kin",
+       y = "Expected number of living relatives") +
+  theme_bw() +
+  facet_wrap(~kin_label)
 ```
 
 ## Part 2: Advanced models
@@ -427,16 +494,17 @@ Now, we see the distribution of kin by sex of kin for a subset of kin:
 ```{r}
 kin_out$kin_summary %>%
   filter(cohort == 1960) %>% 
-  filter(kin%in% c("d", "gd", "m", "s")) %>% 
+  filter(kin%in% c("c", "d", "gd", "ggd", "gm", "m", "n", "a", "s")) %>% 
   rename_kin(sex = "2sex") %>% 
   summarise(count=sum(count_living), .by = c(kin_label, age_focal, sex_kin)) %>%
   ggplot(aes(age_focal, count, fill=sex_kin)) +
   geom_area() +
-  theme_bw() +
   labs(y = "Expected number of living kin by sex and Focal's age",
        x = "Age of a Focal born 1960",
        fill = "Sex of Kin") +
-  facet_wrap(~kin_label, scales = "free_y")
+  facet_wrap(~kin_label, scales = "free_y") +
+  theme_bw() +
+  theme(legend.position = "bottom")
 ```
 
 We now focus on the age distribution of kin. Note that we use the object `kin_full` for this:
@@ -478,16 +546,17 @@ Next, let's plot the number of kin over the life of Focal including the sex of k
 ```{r}
 kin_out$kin_summary %>%
   filter(year == 2023) %>% 
-  filter(kin %in% c("d", "gd", "m", "s")) %>% 
+  filter(kin%in% c("c", "d", "gd", "ggd", "gm", "m", "n", "a", "s")) %>% 
   rename_kin(sex = "2sex") %>% 
   summarise(count=sum(count_living), .by = c(kin_label, age_focal, sex_kin)) %>%
   ggplot(aes(age_focal, count, fill=sex_kin)) +
   geom_area() +
-  theme_bw() +
   labs(y = "Expected number of living kin by sex and Focal's age",
        x = "Age of Focal",
        fill = "Sex of Kin") +
-  facet_wrap(~kin_label, scales = "free_y")
+  facet_wrap(~kin_label, scales = "free_y") +
+  theme_bw() +
+  theme(legend.position = "bottom")
 ```
 
 ## Part 3: Projections
@@ -505,7 +574,7 @@ library(Matrix)
 library(DemoKin)
 ```
 
-### Projections of kinship structure
+### 2. Projections of kinship structure
 
 Load male and female data:
 
@@ -521,7 +590,7 @@ pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male popula
 
 ### 2. Projections of kinship by educational attainment
 
-### 2.1. Multistate models in `DemoKin`
+#### 2.1. Multistate models in `DemoKin`
 
 Since the inception of Caswell's [@caswell_formal_2019] proposed one-sex time-invariant age-structured matrix model 
 of kinship, there have been many extensions to the framework (many of which are documented within this package). 
@@ -546,7 +615,7 @@ In order to implement the model, the function `kin_multi_stage_time_variant_2sex
 1. `U_list_females` A list of female age-and-education specific survival probabilities over the timescale (in matrix forms).
 This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
 
-1.`U_list_males` A list of male age-and-education specific survival probabilities over the timescale (in matrix forms).
+1. `U_list_males` A list of male age-and-education specific survival probabilities over the timescale (in matrix forms).
 This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
 
 1. `F_list_females` A list of female age-and-education specific fertility rates over the timescale (in matrix forms).
@@ -570,47 +639,9 @@ To avoid the need for tedious calculations to put data into such format in this 
 load("data/singapore_edu.rdata")
 ```
 
-Recap: above are lists of period-specific demographic rates, in particular comprising:
-
-`U_mat_fem_edu`: list of age by stage matrices, entries give female probability of survival.
-List starting 2020 ending 2090 for every 5 years.
-
-`U_mat_male_edu`: list of age by stage matrices, entries give female probability of survival.
-List starting 2020 ending 2090.
-
-`F_mat_fem_edu`: list of age by stage matrices, entries give female fert,
-List starting  2020 ending 2090.
-
-`F_mat_male_edu` == `F_mat_fem_edu`.
-
-`T_mat_fem_edu`: list of lists of matrices: Each outer list entry is a list of matrices where each matrix gives age-specific probabilities 
-a female moves up parity (inner list has length of number of age-classes).
-Outer list starting 2020 ending 2090.
-
-`T_mat_male_edu` == T_mat_fem_edu.
-
-`H_mat`: list of matrices which redistributes newborns to age-class 1 and "no education". No time-variation.
-
-### 1. Accumulated number of kin Focal expects over the lifecourse under time-varying rates from 2020 to 2090 ###
+#### 2.2. Run multistate kinship model
 
 We feed the above inputs into the matrix model, along with other arguments:
-
--   Swedish proportion of female births `birth_female` = 1/(1.055+1), because the sex ratio at birth is around 1.055
--   We are not considering parity --> `parity` = FALSE
--   We want some of Focal's kin network --> `output_kin` = c("d", "gd", "m", "s")
--   Accumulated kin in this example --> `summary_kin` = TRUE
--   Focal is female --> `sex_Focal` = "Female"
--   Focal born into "no education" category --> `initial_stage_Focal` = 1
--   timescale as ouptut -- > `output_years` = seq(1,(1+no_years),2), which is complicated for time range with larger than 1 intervals
-
-Accumulated kin are outputted by the argument `summary_kin` = TRUE. In such cases, for each age of Focal, we sum over all possible ages of kin yielding the marginal stage 
-distribution of kin. 
-
-The first sets of time-varying vital rates in our input lists are e.g., U_mat_fem[[1]] (corresponding to mortality in 2020), 
-the 14-st entry is U_mat_fem[[(1+14)]] (mortality in 2020+14*5 = 2090). We require consistency between the length of the list of vital rates and the timescale: U_mat_fem[[1:(1+10)]] = in length = seq(2020,2090,5). Therefore we use the input lists of demographic rates
-
-`U_list_females` = U_mat_fem[1:(1+no_years)] which runs from U_mat_fem[[1]] = 2020 set of rates, up to U_mat_fem[[14]] = 2090 set of rates, 
-and so on...
 
 > this run takes some time (ca. 5 min)
 
@@ -632,8 +663,6 @@ kin_out_2020_2090 <-
                                     H_list = H_mat_edu[1:(1+no_years)],
                                     birth_female = 1/(1.055+1), ## Sex ratio -- Sweden value
                                     parity = FALSE,
-                                    # Currently not working--sorry!
-                                    # output_kin = c("c", "d", "gd", "ggd", "ggm", "gm", "m", "n", "a", "s"),
                                     summary_kin = TRUE,
                                     sex_Focal = "Female", ##  define Focal's sex at birth
                                     initial_stage_Focal = 1, ## Define Focal's stage at birth
@@ -642,7 +671,7 @@ kin_out_2020_2090 <-
 )
 ```
 
-No we have to recode year and age related variables.
+Now we have to recode year and age related variables to show the correct years and educational labels:
 
 ```{r, message=FALSE, warning=FALSE}
 # also need to change the age_focal and year variables accordingly
@@ -661,11 +690,25 @@ kin_out_2020_2090$kin_summary <-
                          "post-secondary"
                        )))
 
+kin_out_2020_2090$kin_full <- kin_out_2020_2090$kin_full%>%
+  mutate(year = (year-1)*5+min(time_range),
+         age_focal = age_focal*5,
+         age_kin = age_kin*5,
+         cohort = year - age_focal,
+         stage_kin = factor(stage_kin, levels = c(1, 2, 3, 4, 5, 6),
+                       labels = c(
+                         "no education",
+                         "incomplete primary",
+                         "primary",
+                         "lower secondary",
+                         "upper secondary",
+                         "post-secondary"
+                       )))
 ```
 
-### 2.2. Number of living kin by education of kin
+#### 2.3. Number of living kin by education of kin
 
-Notice the structure of the output data. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal), and an as.factor() equivalent.
+Notice the structure of the output data. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal).
 
 ```{r, message=FALSE, warning=FALSE}
 head(kin_out_2020_2090$kin_summary)
@@ -726,6 +769,29 @@ kin_out_2020_2090$kin_summary %>%
   theme(legend.position = "bottom")
 ```
 
+#### 2.4. Age distribution of kin (by education)
+
+```{r}
+kin_out_2020_2090$kin_full %>%
+  dplyr::filter(
+    group %in%  c("d", "gd", "gm", "m", "ys", "os")
+    ,  age_focal == 65
+    , year == 2040
+    ) %>%
+  rename(kin = group) %>% 
+  rename_kin("2sex") %>% 
+  ggplot2::ggplot(ggplot2::aes(x = age_kin, y = count, color = stage_kin, fill = stage_kin)) +
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_x_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100)) +
+  labs(x  ="Age of kin for a 65 yo Focal in 2040") +
+  ggplot2::facet_wrap(. ~ kin_label) +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5)
+    , legend.position = "bottom"
+    )
+```
+
 Finally, we'll show the expected number of living grandparents for a 65yo Focal individual over time by the level of educational attainment of the relatives: 
 
 ```{r, fig.height=6, fig.width=8}
@@ -736,8 +802,8 @@ kin_out_2020_2090$kin_summary %>%
   summarise(count=sum(count), .by = c(stage_kin, year)) %>%
   ggplot(aes(x = year, y = count, fill=stage_kin)) +
   geom_area(colour = "black") +
-  labs(y = "Expected number of living kin",
-       x = "Age of a Focal born in 2020") +
+  labs(y = "Expected number of living kin for woman aged 65",
+       x = "Year") +
   theme_bw() +
     theme(legend.position = "bottom")
 ```
