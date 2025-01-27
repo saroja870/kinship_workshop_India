@@ -2,3 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+
+data/WPP2024_Fertility_by_Age1.csv
+data/WPP2024_Life_Table_Complete_Medium_Female_1950-2023.csv
+data/WPP2024_Life_Table_Complete_Medium_Female_2024-2100.csv
+data/WPP2024_Life_Table_Complete_Medium_Male_1950-2023.csv
+data/WPP2024_Life_Table_Complete_Medium_Male_2024-2100.csv
+data/WPP2024_Population1JanuaryBySingleAgeSex_Medium_1950-2023.csv
+data/WPP2024_Population1JanuaryBySingleAgeSex_Medium_2024-2100.csv

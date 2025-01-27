@@ -39,6 +39,8 @@ Please make sure to complete the following preparatory steps before the training
 install.packages("dplyr")
 install.packages("tidyr")
 install.packages("ggplot2")
+install.packages("data.table")
+install.packages("Matrix")
 # install.packages("devtools")
 devtools::install_github("IvanWilli/DemoKin")
 ```
@@ -47,6 +49,7 @@ devtools::install_github("IvanWilli/DemoKin")
 
 ![](download.JPG){width=800px}
 
+1. Unzip the files and keep them somewhere at hand. 
 
 ## Part 1: Simple models
 
@@ -72,17 +75,23 @@ library(ggplot2)
 library(DemoKin)
 ```
 
+Load a couple of functions we prepared:
+
+```{r, warning=F, message=FALSE}
+source("functions.R")
+```
+
 ### 2. Demographic data
 
 We will use data for Singapore from the [2024 Revision of the World Population Prospects](https://population.un.org/wpp/), which we pre-processed for this workshop.
 
 ```{r, warning=FALSE, message=FALSE}
 #Load data for women
-rates_female <- read.csv("data/col_female.csv", stringsAsFactors = F) #female rates
-pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female population (N)
+rates_female <- read.csv("data/sgp_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/sgp_popfemale.csv", stringsAsFactors = F) #female population (N)
 # For data for men
-rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
-pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
+rates_male <- read.csv("data/sgp_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/sgp_popmale.csv", stringsAsFactors = F) # male population (N)
 ```
 
 Let's see what data we will be using. The first object is `rates_female`, a long-format data frame with year- and age-specific fertility rates ('fx') and survival probabilities from a life table ('px'). 
@@ -243,7 +252,7 @@ kin_2020$kin_summary %>%
   plot_diagram(rounding = 2)
 ```
 
-## Part 2: Two-sex models
+## Part 2: Advanced models
 
 Human males generally live shorter and reproduce later than females. 
 These sex-specific processes affect kinship dynamics in a number of ways. 
@@ -265,7 +274,7 @@ library(ggplot2)
 library(DemoKin)
 ```
 
-Load male and female data:
+Load male and female data (restricting it to data in the 1950-2023 period):
 
 ```{r, warning=F, message=FALSE}
 # Data
@@ -275,6 +284,15 @@ pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female p
 # For data for men
 rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
 pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
+```
+
+Since we're not running projections (yet), we'll keep only data in the 1950-2023 period:
+
+```{r, warning=F, message=FALSE}
+rates_female <- rates_female %>% filter(year <= 2023)
+pop_female <- pop_female[ , 1:(2024-1950)]
+rates_male <- rates_male %>% filter(year <= 2023)
+pop_male <- pop_male[ , 1:(2024-1950)]
 ```
 
 Note that for men there is no `fx` (fertility) column because the WPP does not provide it:
@@ -313,7 +331,6 @@ surv_males <-
   pivot_wider(names_from = year, values_from = px) %>%
   select(-age) %>%
   as.matrix()
-
 ```
 
 The data now has years in columns and ages in rows. For example, male survival probabilities:
@@ -323,6 +340,8 @@ surv_males[1:10, 1:6]
 ```
 
 #### 2.2. Run model
+
+> Be patient: this can take around 5-10 minutes to run...
 
 ```{r}
 kin_out <- 
@@ -397,7 +416,7 @@ kin_out$kin_summary %>%
   summarise(count=sum(count_living), .by = c(kin_label, age_focal)) %>%
   ggplot(aes(age_focal, count, fill=kin_label)) +
   geom_area(colour = "black") +
-  labs(y = "Expected number of living kin by sex and Focal's age",
+  labs(y = "Expected number of living kin by Focal's age",
        x = "Age of a Focal born 1960") +
   theme_bw() +
     theme(legend.position = "bottom")
@@ -418,6 +437,22 @@ kin_out$kin_summary %>%
        x = "Age of a Focal born 1960",
        fill = "Sex of Kin") +
   facet_wrap(~kin_label, scales = "free_y")
+```
+
+We now focus on the age distribution of kin. Note that we use the object `kin_full` for this:
+
+```{r}
+kin_out$kin_full %>%
+  filter(age_focal == 60, cohort == 1960) %>% 
+  filter(kin%in% c("d", "gd", "m", "s")) %>% 
+  rename_kin(sex = "2sex") %>% 
+  ggplot(aes(x = age_kin, y = living, colour = sex_kin)) +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Expected number of living kin for a 65 yo Focal born in 1960",
+       x = "Age of kin",
+       colour = "Sex of Kin") +
+  facet_wrap(.~kin_label)
 ```
 
 ### 3.2. Period Approach
@@ -443,7 +478,7 @@ Next, let's plot the number of kin over the life of Focal including the sex of k
 ```{r}
 kin_out$kin_summary %>%
   filter(year == 2023) %>% 
-  filter(kin%in% c("d", "gd", "m", "s")) %>% 
+  filter(kin %in% c("d", "gd", "m", "s")) %>% 
   rename_kin(sex = "2sex") %>% 
   summarise(count=sum(count_living), .by = c(kin_label, age_focal, sex_kin)) %>%
   ggplot(aes(age_focal, count, fill=sex_kin)) +
@@ -466,8 +501,11 @@ Load packages:
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(Matrix)
 library(DemoKin)
 ```
+
+### Projections of kinship structure
 
 Load male and female data:
 
@@ -481,7 +519,340 @@ rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
 pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
 ```
 
+### 2. Projections of kinship by educational attainment
 
+### 2.1. Multistate models in `DemoKin`
+
+Since the inception of Caswell's [@caswell_formal_2019] proposed one-sex time-invariant age-structured matrix model 
+of kinship, there have been many extensions to the framework (many of which are documented within this package). 
+Caswell [-@caswell_formal_2021] updated the original model to incorporate time-varying vital rates, 
+Caswell [-@caswell_formal_2022] introduced two-sexes to the model, 
+and Caswell [-@caswell_formal_2020] considered a multi-stage population of kin. 
+Here, we provide an R function which combines the three aforementioned models. 
+
+Here, we'll demonstrate how the function `kin_multi_stage_time_variant_2sex` computes stage-specific kinship networks encompassing both sexes for an average member of a population, the sex of whom is user specified, and who is subject to time-varying demographic rates. We call this individual Focal. 
+We seek the number of, age, and stage distribution of Focal's relatives, for each age of Focal's life, and as a function of the year in which Focal is born.
+
+In this example we use education as an example stage. Singaporean data ranging from 2020 - 2090 is sourced from the [Wittgenstein Center](https://www.wittgensteincentre.org/en/index.htm). The data is aggregated into 5-year age group and 5-year time interval.
+
+Some simplifying assumptions we make due to data availability are as follows:
+
+1. Fertility rates vary with time, are distinct among education class, but the same over sexes (the so-called ``androgynous approximation'').
+1. The age-specific transition probability across educational categories vary with time, but are the same over sex (androgynous approximation again)
+1. Since there is no transition probability beyond age 15, we assume that at age 5-9, every individual transits from "no education" to "incomplete primary", and at age 10-14, every individual transits from "incomplete primary" to "primary" ("compulsory primamry education assumption due to Swedish reality").
+
+In order to implement the model, the function `kin_multi_stage_time_variant_2sex` expects the following 7 inputs of vital rates, fed in as lists:
+
+1. `U_list_females` A list of female age-and-education specific survival probabilities over the timescale (in matrix forms).
+This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
+
+1.`U_list_males` A list of male age-and-education specific survival probabilities over the timescale (in matrix forms).
+This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
+
+1. `F_list_females` A list of female age-and-education specific fertility rates over the timescale (in matrix forms).
+This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
+
+1. `F_list_males` A list of male age-and-education specific fertility rates over the timescale (in matrix forms).
+This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
+
+1. `T_list_females` A list of lists of female age-specific probabilities of moving up education over the timescale (in matrix forms).
+The outer list has length = the timescale. The inner list has length = number of ages. 
+Each outer list entry is comprised of a list of matrices (stage*stage dimensional), each matrix describes age-specific probabilities of moving stage. 
+Thus for each year, we have a list of age-specific probabilities of moving from one stage to the next.
+
+1. Same as 5) but for males
+
+1. `H_list` A list of length = timescale, in which each element is a matrix which assigns the offspring of individuals in some stage to the appropriate age class (age in rows and states in columns)
+
+To avoid the need for tedious calculations to put data into such format in this vignette, these lists are constructed  in another file and simply imported below. The code below reads in the above function input lists.
+
+```{r eval=TRUE, message=FALSE, warning=FALSE, include=TRUE}
+load("data/singapore_edu.rdata")
+```
+
+Recap: above are lists of period-specific demographic rates, in particular comprising:
+
+`U_mat_fem_edu`: list of age by stage matrices, entries give female probability of survival.
+List starting 2020 ending 2090 for every 5 years.
+
+`U_mat_male_edu`: list of age by stage matrices, entries give female probability of survival.
+List starting 2020 ending 2090.
+
+`F_mat_fem_edu`: list of age by stage matrices, entries give female fert,
+List starting  2020 ending 2090.
+
+`F_mat_male_edu` == `F_mat_fem_edu`.
+
+`T_mat_fem_edu`: list of lists of matrices: Each outer list entry is a list of matrices where each matrix gives age-specific probabilities 
+a female moves up parity (inner list has length of number of age-classes).
+Outer list starting 2020 ending 2090.
+
+`T_mat_male_edu` == T_mat_fem_edu.
+
+`H_mat`: list of matrices which redistributes newborns to age-class 1 and "no education". No time-variation.
+
+### 1. Accumulated number of kin Focal expects over the lifecourse under time-varying rates from 2020 to 2090 ###
+
+We feed the above inputs into the matrix model, along with other arguments:
+
+-   Swedish proportion of female births `birth_female` = 1/(1.055+1), because the sex ratio at birth is around 1.055
+-   We are not considering parity --> `parity` = FALSE
+-   We want some of Focal's kin network --> `output_kin` = c("d", "gd", "m", "s")
+-   Accumulated kin in this example --> `summary_kin` = TRUE
+-   Focal is female --> `sex_Focal` = "Female"
+-   Focal born into "no education" category --> `initial_stage_Focal` = 1
+-   timescale as ouptut -- > `output_years` = seq(1,(1+no_years),2), which is complicated for time range with larger than 1 intervals
+
+Accumulated kin are outputted by the argument `summary_kin` = TRUE. In such cases, for each age of Focal, we sum over all possible ages of kin yielding the marginal stage 
+distribution of kin. 
+
+The first sets of time-varying vital rates in our input lists are e.g., U_mat_fem[[1]] (corresponding to mortality in 2020), 
+the 14-st entry is U_mat_fem[[(1+14)]] (mortality in 2020+14*5 = 2090). We require consistency between the length of the list of vital rates and the timescale: U_mat_fem[[1:(1+10)]] = in length = seq(2020,2090,5). Therefore we use the input lists of demographic rates
+
+`U_list_females` = U_mat_fem[1:(1+no_years)] which runs from U_mat_fem[[1]] = 2020 set of rates, up to U_mat_fem[[14]] = 2090 set of rates, 
+and so on...
+
+> this run takes some time (ca. 5 min)
+
+```{r, message=FALSE, warning=FALSE}
+# Run kinship model for a female Focal over a timescale of no_years
+time_range <- seq(2020,2090,5)
+no_years <- length(time_range)-1
+output_year_select <- seq(1, no_years+1, 2)
+
+# since we use 5-year time frame, we are projecting from 2020 to 2020+5*14 = 2090
+# We decide here to count accumulated kin by age of Focal, and not distributions of kin
+kin_out_2020_2090 <-
+  kin_multi_stage_time_variant_2sex(U_list_females = U_mat_fem_edu[1:(1+no_years)],
+                                    U_list_males = U_mat_male_edu[1:(1+no_years)],
+                                    F_list_females = F_mat_fem_edu[1:(1+no_years)],
+                                    F_list_males = F_mat_male_edu[1:(1+no_years)],
+                                    T_list_females = T_mat_fem_edu[1:(1+no_years)],
+                                    T_list_males = T_mat_fem_edu[1:(1+no_years)],
+                                    H_list = H_mat_edu[1:(1+no_years)],
+                                    birth_female = 1/(1.055+1), ## Sex ratio -- Sweden value
+                                    parity = FALSE,
+                                    # Currently not working--sorry!
+                                    # output_kin = c("c", "d", "gd", "ggd", "ggm", "gm", "m", "n", "a", "s"),
+                                    summary_kin = TRUE,
+                                    sex_Focal = "Female", ##  define Focal's sex at birth
+                                    initial_stage_Focal = 1, ## Define Focal's stage at birth
+                                    output_years = output_year_select # it seems tricky to set up output years when the time interval is not 1
+                                    # now I select every 10 year for output
+)
+```
+
+No we have to recode year and age related variables.
+
+```{r, message=FALSE, warning=FALSE}
+# also need to change the age_focal and year variables accordingly
+kin_out_2020_2090$kin_summary <- 
+  kin_out_2020_2090$kin_summary %>%
+  mutate(year = (year-1)*5+min(time_range),
+         age_focal = age_focal*5,
+         cohort = year - age_focal,
+         stage_kin = factor(stage_kin, levels = c(1, 2, 3, 4, 5, 6),
+                       labels = c(
+                         "no education",
+                         "incomplete primary",
+                         "primary",
+                         "lower secondary",
+                         "upper secondary",
+                         "post-secondary"
+                       )))
+
+```
+
+### 2.2. Number of living kin by education of kin
+
+Notice the structure of the output data. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal), and an as.factor() equivalent.
+
+```{r, message=FALSE, warning=FALSE}
+head(kin_out_2020_2090$kin_summary)
+```
+
+This is the number kin (projected) kin by type of kin:
+
+```{r, fig.height=6, fig.width=8}
+
+kin_out_2020_2090$kin_summary %>%
+  filter(group != "Focal") %>% 
+  filter(cohort == 2020) %>%
+  rename(kin = group) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count), .by = c(kin_label, age_focal)) %>%
+  ggplot(aes(x = age_focal, y = count, fill=kin_label)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of living kin",
+       x = "Age of a Focal born in 2020") +
+  theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+And this is the same number but by level of educational attainment of the kin: 
+
+```{r, fig.height=6, fig.width=8}
+
+kin_out_2020_2090$kin_summary %>%
+  filter(group != "Focal") %>% 
+  filter(cohort == 2020) %>%
+  rename(kin = group) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count), .by = c(stage_kin, age_focal)) %>%
+  ggplot(aes(x = age_focal, y = count, fill=stage_kin)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of living kin",
+       x = "Age of a Focal born in 2020") +
+  theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+Separately for selected kin: 
+
+```{r, fig.height=6, fig.width=8}
+
+kin_out_2020_2090$kin_summary %>%
+  filter(group %in% c("d", "gd", "m", "gm")) %>% 
+  filter(cohort == 2020) %>%
+  rename(kin = group) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count), .by = c(kin_label, stage_kin, age_focal)) %>%
+  ggplot(aes(x = age_focal, y = count, fill=stage_kin)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of living kin",
+       x = "Age of a Focal born in 2020") +
+  facet_wrap(. ~ kin_label) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+Finally, we'll show the expected number of living grandparents for a 65yo Focal individual over time by the level of educational attainment of the relatives: 
+
+```{r, fig.height=6, fig.width=8}
+kin_out_2020_2090$kin_summary %>%
+  filter(group != "Focal", age_focal == 65) %>% 
+  rename(kin = group) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count), .by = c(stage_kin, year)) %>%
+  ggplot(aes(x = year, y = count, fill=stage_kin)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of living kin",
+       x = "Age of a Focal born in 2020") +
+  theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+## Part 4: Other countries
+
+Here, we show how to download fertility, mortality, and population data for other countries and years. 
+
+First, we will load the `download_wpp24()` function, which automates the process of downloading these datasets. Note that this process may take a couple of minutes.
+
+These packages will be used: 
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(data.table)
+```
+
+Load functions to download and process:
+
+```{r,}
+# Load function to filter data
+source("functions.R")
+```
+
+Run the function to download data. **NOTE: This function will take a really long time to run since it downloads a bunch of large files, so make sure to have good and stable internet connection. The good thing is you only need to download the files once!**
+
+
+```{r, eval = F}
+# Download the data
+# Use include_projections = T to include data after 2023
+download_wpp24(include_projections = T)
+```
+
+Once the data is downloaded, we can filter the information of interest—for example, by country. To do this, we will load two functions:
+
+- `UNWPP_data`: This function filters mortality data (px, qx, mx) and fertility data (fx) by the country of interest and the desired time period.
+
+- `UNWPP_pop`: This function filters population size (N) data.
+
+To select the country of interest, refer to the country names available [here](https://unstats.un.org/unsd/methodology/m49/).
+
+Now, we read the data and reformat the data from the csv files we downloaded in the earlier step.
+
+```{r, eval = F}
+## Example output for DemoKin using female rates
+# Select country, year and sex to obtain px and fx
+
+fert_female <-
+  UNWPP_data(country = "Guatemala", 
+             start_year = 1950, 
+             end_year = 2100,
+             sex = c("Female"),
+             indicators = c("fx"), #indicators of interest
+             output_format = "csv", #format you want to save (csv or rdata)
+             output_file = "Guatemala") 
+
+mort_both <-
+  UNWPP_data(country = "Guatemala", 
+             start_year = 1950, 
+             end_year = 2100,
+             sex = c("Male", "Female"),
+             indicators = c("px"), #indicators of interest
+             output_format = "csv", #format you want to save (csv or rdata)
+             output_file = "Guatemala") 
+
+pop_female <-
+  UNWPP_pop(country = "Guatemala", 
+            start_year = 1950, 
+            end_year = 2100, 
+            sex = "Female")
+
+pop_male <-
+  UNWPP_pop(country = "Guatemala", 
+            start_year = 1950, 
+            end_year = 2100, 
+            sex = "Male")
+
+# Join rate objects by sex
+
+rates_female <- 
+  left_join(fert_female, mort_both) %>% 
+  filter(Sex == "Female")
+
+rates_male <- 
+  rates %>% 
+  filter(Sex == "Male")
+```
+
+Finally, you can save this data to reuse us it in your own project:
+
+```{r, eval = F}
+write.csv(rates_female, "data/gtm_female.csv", row.names = F)
+write.csv(rates_male, "data/gtm_male.csv", row.names = F)
+write.csv(pop_female, "data/gtm_popfemale.csv", row.names = F)
+write.csv(pop_male, "data/gtm_popmale.csv", row.names = F)
+```
+
+Remember that we need to reshape this data to use it with DemoKin:
+
+```{r}
+# Reshape fertility
+arg_asfr <- rates_female %>%
+  select(age, year, fx) %>%
+  pivot_wider(names_from = year, values_from = fx) %>%
+  select(-age) %>%
+  as.matrix()
+
+# Reshape survival
+arg_px_female <- rates_female %>%
+  select(age, year, px) %>%
+  pivot_wider(names_from = year, values_from = px) %>%
+  select(-age) %>%
+  as.matrix()
+```
 
 ## References
 
