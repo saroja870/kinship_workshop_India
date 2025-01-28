@@ -41,8 +41,6 @@ install.packages("tidyr")
 install.packages("ggplot2")
 install.packages("data.table")
 install.packages("Matrix")
-# install.packages("devtools")
-devtools::install_github("IvanWilli/DemoKin")
 ```
 
 1. Download the workshop's GitHub repository to your computer: https://github.com/alburezg/kinship_workshop_NUS. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
@@ -622,7 +620,8 @@ Some simplifying assumptions we make due to data availability are as follows:
 
 1. Fertility rates vary with time, are distinct among education class, but the same over sexes (the so-called ``androgynous approximation'').
 1. The age-specific transition probability across educational categories vary with time, but are the same over sex (androgynous approximation again)
-1. Since there is no transition probability beyond age 15, we assume that at age 5-9, every individual transits from "no education" to "incomplete primary", and at age 10-14, every individual transits from "incomplete primary" to "primary" ("compulsory primamry education assumption due to Swedish reality").
+1. Since there is no transition probability beyond age 15, we assume that at age 5-9, every individual transits from "no education" to "incomplete primary", and at age 10-14, every individual transits from "incomplete primary" to "primary" (based on the Compulsory Education Act in Singapore).
+1. Demographic rates are stable (time-invariant) before 2020 (the earliest observed data point). 
 
 In order to implement the model, the function `kin_multi_stage_time_variant_2sex` expects the following 7 inputs of vital rates, fed in as lists:
 
@@ -794,7 +793,7 @@ kin_out_2020_2090$kin_full %>%
 
 ##### 2.4.2. Period approach
 
-Let's see the expected number of living grandchildren for a 60 yo woman over time by the level of educational attainment of the grandchildren:
+Let's see the expected number of living children and grandchildren for a 60 yo woman over time by the level of educational attainment of the children and grandchildren:
 
 ```{r, fig.height=6, fig.width=8}
 kin_out_2020_2090$kin_summary %>%
@@ -929,23 +928,7 @@ write.csv(pop_female, "data/gtm_popfemale.csv", row.names = F)
 write.csv(pop_male, "data/gtm_popmale.csv", row.names = F)
 ```
 
-Remember that we need to reshape this data to use it with DemoKin:
-
-```{r}
-# Reshape fertility
-arg_asfr <- rates_female %>%
-  select(age, year, fx) %>%
-  pivot_wider(names_from = year, values_from = fx) %>%
-  select(-age) %>%
-  as.matrix()
-
-# Reshape survival
-arg_px_female <- rates_female %>%
-  select(age, year, px) %>%
-  pivot_wider(names_from = year, values_from = px) %>%
-  select(-age) %>%
-  as.matrix()
-```
+Until now, we have all the input data needed to run the 2-sex time-variant model (see "1. Setup" in Part 2). We can simply repeat the analysis in Part 2 (starting from "2. Run kinship model") and get the kin estimates for Guatemala.
 
 ## References
 
