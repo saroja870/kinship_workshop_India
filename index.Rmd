@@ -28,7 +28,7 @@ options(scipen=999999)
 # {.tabset}
 ## Introduction 
 
-### Preparation
+### 1. Preparation
 
 Please make sure to complete the following preparatory steps before the training workshop:
 
@@ -50,6 +50,16 @@ devtools::install_github("IvanWilli/DemoKin")
 ![](download.JPG){width=800px}
 
 1. Unzip the files and keep them somewhere at hand. 
+
+### 2. Agenda (preliminary)
+
+![](agenda.JPG){width=500px}
+
+### 3. Acknowledgements
+
+This workshop includes material from the course [Matrix Approaches to Modelling Kinship: Theory and Applications](https://ivanwilli.github.io/matrix_kinship_course_lab/index) prepared by [Ivan Williams](https://github.com/IvanWilli) and adapted by [Amanda Martins](https://www.demogr.mpg.de/en/about_us_6113/staff_directory_1899/amanda_martins_4265/) for the [European Doctoral School of Demography](https://amandamartinsal.github.io/EDSD_kinship_24-25/) and for the [ALAP 2024 Conference](https://amandamartinsal.github.io/ALAP24_parentesco/). The multistate code was adapted from the corresponding [vignette](https://github.com/IvanWilli/DemoKin/blob/main/vignettes/Reference_TwoSex_MultiState_TimeVariant.Rmd) in `DemoKin` contributed by [Joe Butterick](https://www.cpc.ac.uk/about_us/the_team/2047/Joe_Barrass_Butterick) and adapted to the case of Singapore by [Sha Jiang](https://www.demogr.mpg.de/en/about_us_6113/staff_directory_1899/sha_jiang_4369/). [Saroja Adhikari](https://www.demogr.mpg.de/de/ueber_uns_6113/mitarbeiter_innen_1899/saroja_adhikari_4434/) provided support with the Wittgenstein educational data.
+
+For a full list of `DemoKin` contributors, see https://github.com/IvanWilli/DemoKin. 
 
 ## Part 1: Simple models
 
@@ -319,7 +329,7 @@ kin_2020$kin_full %>%
   facet_wrap(~kin_label)
 ```
 
-## Part 2: Advanced models
+## Part 2: 2-sex time-variant models
 
 Human males generally live shorter and reproduce later than females. 
 These sex-specific processes affect kinship dynamics in a number of ways. 
@@ -559,6 +569,22 @@ kin_out$kin_summary %>%
   theme(legend.position = "bottom")
 ```
 
+Finally, we see the age distribution of kin for a 65 yo woman in calendar year 2023. Note that we use the object `kin_full` for this:
+
+```{r}
+kin_out$kin_full %>%
+  filter(age_focal == 65, year == 2023) %>% 
+  filter(kin%in% c("d", "gd", "m", "s")) %>% 
+  rename_kin(sex = "2sex") %>% 
+  ggplot(aes(x = age_kin, y = living, colour = sex_kin)) +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Expected number of living kin for a 65 yo Focal born in 1960",
+       x = "Age of kin",
+       colour = "Sex of Kin") +
+  facet_wrap(.~kin_label)
+```
+
 ## Part 3: Projections
 
 ### 1. Setup
@@ -574,20 +600,6 @@ library(Matrix)
 library(DemoKin)
 ```
 
-### 2. Projections of kinship structure
-
-Load male and female data:
-
-```{r, warning=F, message=FALSE}
-# Data
-#Load data for women
-rates_female <- read.csv("data/col_female.csv", stringsAsFactors = F) #female rates
-pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female population (N)
-# For data for men
-rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
-pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
-```
-
 ### 2. Projections of kinship by educational attainment
 
 #### 2.1. Multistate models in `DemoKin`
@@ -601,6 +613,8 @@ Here, we provide an R function which combines the three aforementioned models.
 
 Here, we'll demonstrate how the function `kin_multi_stage_time_variant_2sex` computes stage-specific kinship networks encompassing both sexes for an average member of a population, the sex of whom is user specified, and who is subject to time-varying demographic rates. We call this individual Focal. 
 We seek the number of, age, and stage distribution of Focal's relatives, for each age of Focal's life, and as a function of the year in which Focal is born.
+
+#### 2.2. Data
 
 In this example we use education as an example stage. Singaporean data ranging from 2020 - 2090 is sourced from the [Wittgenstein Center](https://www.wittgensteincentre.org/en/index.htm). The data is aggregated into 5-year age group and 5-year time interval.
 
@@ -633,13 +647,13 @@ Thus for each year, we have a list of age-specific probabilities of moving from 
 
 1. `H_list` A list of length = timescale, in which each element is a matrix which assigns the offspring of individuals in some stage to the appropriate age class (age in rows and states in columns)
 
-To avoid the need for tedious calculations to put data into such format in this vignette, these lists are constructed  in another file and simply imported below. The code below reads in the above function input lists.
+We pre-processed the data for this workshop:
 
 ```{r eval=TRUE, message=FALSE, warning=FALSE, include=TRUE}
 load("data/singapore_edu.rdata")
 ```
 
-#### 2.2. Run multistate kinship model
+#### 2.3. Run multistate kinship model
 
 We feed the above inputs into the matrix model, along with other arguments:
 
@@ -706,37 +720,23 @@ kin_out_2020_2090$kin_full <- kin_out_2020_2090$kin_full%>%
                        )))
 ```
 
-#### 2.3. Number of living kin by education of kin
+#### 2.4. Number of living kin by education of kin
 
 Notice the structure of the output data. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal).
 
 ```{r, message=FALSE, warning=FALSE}
-head(kin_out_2020_2090$kin_summary)
+kin_out_2020_2090$kin_summary[1000:1010, ]
 ```
 
-This is the number kin (projected) kin by type of kin:
+##### 2.4.1. Cohort approach
+
+We start by showing the number of living kin for an average woman born in 2020 in Singapore by level of educational attainment of her kin: 
 
 ```{r, fig.height=6, fig.width=8}
 
 kin_out_2020_2090$kin_summary %>%
-  filter(group != "Focal") %>% 
-  filter(cohort == 2020) %>%
-  rename(kin = group) %>% 
-  rename_kin(sex = "2sex") %>% 
-  summarise(count=sum(count), .by = c(kin_label, age_focal)) %>%
-  ggplot(aes(x = age_focal, y = count, fill=kin_label)) +
-  geom_area(colour = "black") +
-  labs(y = "Expected number of living kin",
-       x = "Age of a Focal born in 2020") +
-  theme_bw() +
-    theme(legend.position = "bottom")
-```
-
-And this is the same number but by level of educational attainment of the kin: 
-
-```{r, fig.height=6, fig.width=8}
-
-kin_out_2020_2090$kin_summary %>%
+  # Multistate models also include an (educational) state for the Focal individual
+  # which is not of interest here
   filter(group != "Focal") %>% 
   filter(cohort == 2020) %>%
   rename(kin = group) %>% 
@@ -745,12 +745,12 @@ kin_out_2020_2090$kin_summary %>%
   ggplot(aes(x = age_focal, y = count, fill=stage_kin)) +
   geom_area(colour = "black") +
   labs(y = "Expected number of living kin",
-       x = "Age of a Focal born in 2020") +
+       x = "Age of a woman born in 2020") +
   theme_bw() +
     theme(legend.position = "bottom")
 ```
 
-Separately for selected kin: 
+Show the same values, but separately for selected kin: 
 
 ```{r, fig.height=6, fig.width=8}
 
@@ -763,27 +763,27 @@ kin_out_2020_2090$kin_summary %>%
   ggplot(aes(x = age_focal, y = count, fill=stage_kin)) +
   geom_area(colour = "black") +
   labs(y = "Expected number of living kin",
-       x = "Age of a Focal born in 2020") +
+       x = "Age of a woman born in 2020") +
   facet_wrap(. ~ kin_label) +
   theme_bw() +
   theme(legend.position = "bottom")
 ```
 
-#### 2.4. Age distribution of kin (by education)
+Next, we see the age distribution of kin (by education of kin) for a 60 yo woman born in the year 2020:
 
 ```{r}
 kin_out_2020_2090$kin_full %>%
   dplyr::filter(
-    group %in%  c("d", "gd", "gm", "m", "ys", "os")
-    ,  age_focal == 65
-    , year == 2040
+    group %in%  c("d", "gd", "m", "gm")
+    ,  age_focal == 60
+    , cohort == 2020
     ) %>%
   rename(kin = group) %>% 
   rename_kin("2sex") %>% 
   ggplot2::ggplot(ggplot2::aes(x = age_kin, y = count, color = stage_kin, fill = stage_kin)) +
   ggplot2::geom_bar(position = "stack", stat = "identity") +
   ggplot2::scale_x_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100)) +
-  labs(x  ="Age of kin for a 65 yo Focal in 2040") +
+  labs(x  ="Age of kin for a 65 yo woman born in 2020") +
   ggplot2::facet_wrap(. ~ kin_label) +
   ggplot2::theme_bw() +
   ggplot2::theme(
@@ -792,21 +792,48 @@ kin_out_2020_2090$kin_full %>%
     )
 ```
 
-Finally, we'll show the expected number of living grandparents for a 65yo Focal individual over time by the level of educational attainment of the relatives: 
+##### 2.4.2. Period approach
+
+Let's see the expected number of living grandchildren for a 60 yo woman over time by the level of educational attainment of the grandchildren:
 
 ```{r, fig.height=6, fig.width=8}
 kin_out_2020_2090$kin_summary %>%
-  filter(group != "Focal", age_focal == 65) %>% 
+  filter(
+    group %in% c("d", "gd")
+    , age_focal == 60
+    ) %>% 
   rename(kin = group) %>% 
   rename_kin(sex = "2sex") %>% 
-  summarise(count=sum(count), .by = c(stage_kin, year)) %>%
+  summarise(count=sum(count), .by = c(stage_kin, kin_label, year)) %>%
   ggplot(aes(x = year, y = count, fill=stage_kin)) +
   geom_area(colour = "black") +
-  labs(y = "Expected number of living kin for woman aged 65",
+  labs(y = "Expected number of descendants a for woman aged 60",
        x = "Year") +
+  facet_grid( . ~ kin_label) +
   theme_bw() +
     theme(legend.position = "bottom")
 ```
+
+And, finally, the level of education of the parents and grandparents of a newborn woman over time:
+
+```{r, fig.height=6, fig.width=8}
+kin_out_2020_2090$kin_summary %>%
+  filter(
+    group %in% c("m", "gm")
+    , age_focal == 0
+    ) %>% 
+  rename(kin = group) %>% 
+  rename_kin(sex = "2sex") %>% 
+  summarise(count=sum(count), .by = c(stage_kin, kin_label, year)) %>%
+  ggplot(aes(x = year, y = count, fill=stage_kin)) +
+  geom_area(colour = "black") +
+  labs(y = "Expected number of descendants a for newborn woman (aged 0)",
+       x = "Year") +
+  facet_grid( . ~ kin_label) +
+  theme_bw() +
+    theme(legend.position = "bottom")
+```
+
 
 ## Part 4: Other countries
 
@@ -829,7 +856,9 @@ Load functions to download and process:
 source("functions.R")
 ```
 
-Run the function to download data. **NOTE: This function will take a really long time to run since it downloads a bunch of large files, so make sure to have good and stable internet connection. The good thing is you only need to download the files once!**
+Run the function to download data. In this case, we're downloading data for Guatemala, but you can chose any country you like. To select the country of interest, refer to the country names available [here](https://unstats.un.org/unsd/methodology/m49/).  
+
+**NOTE: This function will take a really long time to run since it downloads a bunch of large files, so make sure to have good and stable internet connection. The good thing is you only need to download the files once!**
 
 
 ```{r, eval = F}
@@ -843,8 +872,6 @@ Once the data is downloaded, we can filter the information of interest—for exa
 - `UNWPP_data`: This function filters mortality data (px, qx, mx) and fertility data (fx) by the country of interest and the desired time period.
 
 - `UNWPP_pop`: This function filters population size (N) data.
-
-To select the country of interest, refer to the country names available [here](https://unstats.un.org/unsd/methodology/m49/).
 
 Now, we read the data and reformat the data from the csv files we downloaded in the earlier step.
 
@@ -893,7 +920,7 @@ rates_male <-
   filter(Sex == "Male")
 ```
 
-Finally, you can save this data to reuse us it in your own project:
+Finally, you can save this data to reuse it in your own project:
 
 ```{r, eval = F}
 write.csv(rates_female, "data/gtm_female.csv", row.names = F)
