@@ -41,6 +41,8 @@ install.packages("tidyr")
 install.packages("ggplot2")
 install.packages("data.table")
 install.packages("Matrix")
+# install.packages("devtools")
+devtools::install_github("IvanWilli/DemoKin")
 ```
 
 1. Download the workshop's GitHub repository to your computer: https://github.com/alburezg/kinship_workshop_NUS. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
@@ -70,6 +72,7 @@ This has led to the development of sophisticated methodological and conceptual a
 DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), but we'll use the development version on [GitHub](https://github.com/IvanWilli/DemoKin):
 
 ```{r, eval=FALSE}
+# If you haven't done this already
 # install.packages("devtools")
 devtools::install_github("IvanWilli/DemoKin")
 ```
@@ -352,13 +355,12 @@ library(DemoKin)
 Load male and female data (restricting it to data in the 1950-2023 period):
 
 ```{r, warning=F, message=FALSE}
-# Data
 #Load data for women
-rates_female <- read.csv("data/col_female.csv", stringsAsFactors = F) #female rates
-pop_female <- read.csv("data/col_popfemale.csv", stringsAsFactors = F) #female population (N)
+rates_female <- read.csv("data/sgp_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/sgp_popfemale.csv", stringsAsFactors = F) #female population (N)
 # For data for men
-rates_male <- read.csv("data/col_male.csv", stringsAsFactors = F) # male rates
-pop_male <- read.csv("data/col_popmale.csv", stringsAsFactors = F) # male population (N)
+rates_male <- read.csv("data/sgp_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/sgp_popmale.csv", stringsAsFactors = F) # male population (N)
 ```
 
 Since we're not running projections (yet), we'll keep only data in the 1950-2023 period:
@@ -583,7 +585,7 @@ kin_out$kin_full %>%
   facet_wrap(.~kin_label)
 ```
 
-## Part 3: Projections
+## Part 3: Projections of kinship by education
 
 ### 1. Setup
 
@@ -598,9 +600,7 @@ library(Matrix)
 library(DemoKin)
 ```
 
-### 2. Projections of kinship by educational attainment
-
-#### 2.1. Multistate models in `DemoKin`
+### 2 Multistate models in `DemoKin`
 
 Since the inception of Caswell's [@caswell_formal_2019] proposed one-sex time-invariant age-structured matrix model 
 of kinship, there have been many extensions to the framework (many of which are documented within this package). 
@@ -612,7 +612,7 @@ Here, we provide an R function which combines the three aforementioned models.
 Here, we'll demonstrate how the function `kin_multi_stage_time_variant_2sex` computes stage-specific kinship networks encompassing both sexes for an average member of a population, the sex of whom is user specified, and who is subject to time-varying demographic rates. We call this individual Focal. 
 We seek the number of, age, and stage distribution of Focal's relatives, for each age of Focal's life, and as a function of the year in which Focal is born.
 
-#### 2.2. Data
+### 3. Data
 
 In this example we use education as an example stage. Singaporean data ranging from 2020 - 2090 is sourced from the [Wittgenstein Center](https://www.wittgensteincentre.org/en/index.htm). The data is aggregated into 5-year age group and 5-year time interval.
 
@@ -652,7 +652,7 @@ We pre-processed the data for this workshop:
 load("data/singapore_edu.rdata")
 ```
 
-#### 2.3. Run multistate kinship model
+### 4. Run multistate kinship model
 
 We feed the above inputs into the matrix model, along with other arguments:
 
@@ -719,7 +719,7 @@ kin_out_2020_2090$kin_full <- kin_out_2020_2090$kin_full%>%
                        )))
 ```
 
-#### 2.4. Number of living kin by education of kin
+### 5. Number of living kin by education of kin
 
 Notice the structure of the output data. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal).
 
@@ -727,7 +727,7 @@ Notice the structure of the output data. We have columns `age_focal` and `kin_st
 kin_out_2020_2090$kin_summary[1000:1010, ]
 ```
 
-##### 2.4.1. Cohort approach
+#### 5.1. Cohort approach
 
 We start by showing the number of living kin for an average woman born in 2020 in Singapore by level of educational attainment of her kin: 
 
@@ -791,7 +791,7 @@ kin_out_2020_2090$kin_full %>%
     )
 ```
 
-##### 2.4.2. Period approach
+#### 5.2. Period approach
 
 Let's see the expected number of living children and grandchildren for a 60 yo woman over time by the level of educational attainment of the children and grandchildren:
 
@@ -928,7 +928,7 @@ write.csv(pop_female, "data/gtm_popfemale.csv", row.names = F)
 write.csv(pop_male, "data/gtm_popmale.csv", row.names = F)
 ```
 
-Until now, we have all the input data needed to run the 2-sex time-variant model (see "1. Setup" in Part 2). We can simply repeat the analysis in Part 2 (starting from "2. Run kinship model") and get the kin estimates for Guatemala.
+Now we have all the input data needed to run the 2-sex time-variant model (see "1. Setup" in Part 2). We can simply repeat the analysis in Part 2 (starting from "2. Run kinship model") and get the kin estimates for Guatemala.
 
 ## References
 
