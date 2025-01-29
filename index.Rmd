@@ -662,7 +662,8 @@ We feed the above inputs into the matrix model, along with other arguments:
 # Run kinship model for a female Focal over a timescale of no_years
 time_range <- seq(2020,2090,5)
 no_years <- length(time_range)-1
-output_year_select <- seq(1, no_years+1, 2)
+# For 5-y age and year intervals
+output_year_select <- seq(1, no_years+1, 1)
 
 # since we use 5-year time frame, we are projecting from 2020 to 2020+5*14 = 2090
 # We decide here to count accumulated kin by age of Focal, and not distributions of kin
