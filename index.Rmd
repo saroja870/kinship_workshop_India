@@ -602,49 +602,36 @@ library(DemoKin)
 
 ### 2 Multistate models in `DemoKin`
 
-Since the inception of Caswell's [@caswell_formal_2019] proposed one-sex time-invariant age-structured matrix model 
-of kinship, there have been many extensions to the framework (many of which are documented within this package). 
-Caswell [-@caswell_formal_2021] updated the original model to incorporate time-varying vital rates, 
-Caswell [-@caswell_formal_2022] introduced two-sexes to the model, 
-and Caswell [-@caswell_formal_2020] considered a multi-stage population of kin. 
-Here, we provide an R function which combines the three aforementioned models. 
+Since Caswell's [@caswell_formal_2019] one-sex time-invariant age-structured matrix model 
+of kinship,  the framework has expanded to incorporate time-varying vital rates [-@caswell_formal_2021], two-sex of kin and focal [-@caswell_formal_2022] and multi-state kin populations [-@caswell_formal_2020].  
+Here, we provide an R function`kin_multi_stage_time_variant_2sex`, which combines the three aforementioned models and provide a two-sex time-varying multi-state model.
 
-Here, we'll demonstrate how the function `kin_multi_stage_time_variant_2sex` computes stage-specific kinship networks encompassing both sexes for an average member of a population, the sex of whom is user specified, and who is subject to time-varying demographic rates. We call this individual Focal. 
-We seek the number of, age, and stage distribution of Focal's relatives, for each age of Focal's life, and as a function of the year in which Focal is born.
+This function computes stage-specific kinship networks across both sexes for an average member of a population (focal) under time-varying demographic rates. It estimates the number, age, sex, and stage distribution of Focal's relatives, for each age of Focal's life, and as a function of the year in which Focal is born.
 
 ### 3. Data
 
 In this example we use education as an example stage. Singaporean data ranging from 2020 - 2090 is sourced from the [Wittgenstein Center](https://www.wittgensteincentre.org/en/index.htm). The data is aggregated into 5-year age group and 5-year time interval.
-
-Some simplifying assumptions we make due to data availability are as follows:
-
-1. Fertility rates vary with time, are distinct among education class, but the same over sexes (the so-called ``androgynous approximation'').
-1. The age-specific transition probability across educational categories vary with time, but are the same over sex (androgynous approximation again)
-1. Since there is no transition probability beyond age 15, we assume that at age 5-9, every individual transits from "no education" to "incomplete primary", and at age 10-14, every individual transits from "incomplete primary" to "primary" (based on the Compulsory Education Act in Singapore).
-1. Demographic rates are stable (time-invariant) before 2020 (the earliest observed data point). 
 
 In order to implement the model, the function `kin_multi_stage_time_variant_2sex` expects the following 7 inputs of vital rates, fed in as lists:
 
 1. `U_list_females` A list of female age-and-education specific survival probabilities over the timescale (in matrix forms).
 This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
 
-1. `U_list_males` A list of male age-and-education specific survival probabilities over the timescale (in matrix forms).
-This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
+1. `U_list_males` A list in the same format as `U_list_females`, but for males.
 
 1. `F_list_females` A list of female age-and-education specific fertility rates over the timescale (in matrix forms).
 This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
 
-1. `F_list_males` A list of male age-and-education specific fertility rates over the timescale (in matrix forms).
-This input list has length = the timescale, and each entry represents the rates of a specific period in matrix form: stage columns, age rows.
+1. `F_list_males` A list in the same format as `F_list_females`, but for males.
 
 1. `T_list_females` A list of lists of female age-specific probabilities of moving up education over the timescale (in matrix forms).
 The outer list has length = the timescale. The inner list has length = number of ages. 
 Each outer list entry is comprised of a list of matrices (stage*stage dimensional), each matrix describes age-specific probabilities of moving stage. 
 Thus for each year, we have a list of age-specific probabilities of moving from one stage to the next.
 
-1. Same as 5) but for males
+1. `T_list_males` A list in the same format as `T_list_females`, but for males.
 
-1. `H_list` A list of length = timescale, in which each element is a matrix which assigns the offspring of individuals in some stage to the appropriate age class (age in rows and states in columns)
+1. `H_list` A list of length = timescale, in which each element is a matrix which assigns the offspring of individuals in some stage to the appropriate age class (age in rows and states in columns). This list of matrices applies to both male and female offspring.
 
 We pre-processed the data for this workshop:
 
@@ -675,7 +662,7 @@ kin_out_2020_2090 <-
                                     T_list_females = T_mat_fem_edu[1:(1+no_years)],
                                     T_list_males = T_mat_fem_edu[1:(1+no_years)],
                                     H_list = H_mat_edu[1:(1+no_years)],
-                                    birth_female = 1/(1.055+1), ## Sex ratio -- Sweden value
+                                    birth_female = 1/(1.06+1), ## Sex ratio at birth -- Singapore value (1.06)
                                     parity = FALSE,
                                     summary_kin = TRUE,
                                     sex_Focal = "Female", ##  define Focal's sex at birth
@@ -722,7 +709,9 @@ kin_out_2020_2090$kin_full <- kin_out_2020_2090$kin_full%>%
 
 ### 5. Number of living kin by education of kin
 
-Notice the structure of the output data. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal).
+Notice the structure of the output data `kin_summary`. We have columns `age_focal` and `kin_stage` because we sum over all ages of kin, and produce the marginal stage distribution given age of Focal. We have a column corresponding to sex of kin `sex_kin`, a column showing which `year` we are considering, and a column headed `group` which selects the kin type. Finally, we have columns showing Focal's cohort of birth `cohort` (e.g., year - age of Focal).
+
+Let's take a look at `kin_summary` by selecting 10 rows, from row 1000 to row 1010. 
 
 ```{r, message=FALSE, warning=FALSE}
 kin_out_2020_2090$kin_summary[1000:1010, ]
@@ -834,6 +823,13 @@ kin_out_2020_2090$kin_summary %>%
     theme(legend.position = "bottom")
 ```
 
+
+We note that there are following simplifying assumptions due to data limitations:
+
+1. Fertility rates vary over time and by education level but are identical for both sexes (the androgynous approximation).
+2. Age-specific education transition probabilities vary over time but not by sex (also an androgynous approximation).
+3. Since no transition data exist beyond age 10, we assume that at ages 0-4, individuals transition from no education to incomplete primary in the next 5-year interval, and at ages 5-9, they transition from incomplete primary to primary (based on Singapore's Compulsory Education Act).
+4. Demographic rates remain stable (time-invariant) before 2020, the earliest observed data point.
 
 ## Part 4: Other countries
 
