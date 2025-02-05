@@ -41,8 +41,8 @@ install.packages("tidyr")
 install.packages("ggplot2")
 install.packages("data.table")
 install.packages("Matrix")
-# install.packages("devtools")
-devtools::install_github("IvanWilli/DemoKin")
+# install.packages("remotes")
+remotes::install_github("IvanWilli/DemoKin")
 ```
 
 1. Download the workshop's GitHub repository to your computer: https://github.com/alburezg/kinship_workshop_NUS. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
