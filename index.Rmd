@@ -43,8 +43,9 @@ install.packages("readr")
 install.packages("knitr")
 install.packages("data.table")
 install.packages("Matrix")
-# DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), but we'll use the development version on [GitHub](https://github.com/IvanWilli/DemoKin):
-# install.packages("remotes")
+# DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), 
+# but we'll use the development version on [GitHub](https://github.com/IvanWilli/DemoKin):
+install.packages("remotes")
 remotes::install_github("IvanWilli/DemoKin")
 ```
 
