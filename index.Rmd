@@ -39,10 +39,24 @@ Please make sure to complete the following preparatory steps before the training
 install.packages("dplyr")
 install.packages("tidyr")
 install.packages("ggplot2")
+install.packages("readr")
+install.packages("knitr")
 install.packages("data.table")
 install.packages("Matrix")
+# DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), but we'll use the development version on [GitHub](https://github.com/IvanWilli/DemoKin):
 # install.packages("remotes")
 remotes::install_github("IvanWilli/DemoKin")
+```
+
+Now, check if the packages can be loaded:
+
+```{r, warning=F, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(knitr)
+library(DemoKin)
 ```
 
 1. Download the workshop's GitHub repository to your computer: https://github.com/alburezg/kinship_workshop_NUS. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
@@ -69,20 +83,14 @@ This has led to the development of sophisticated methodological and conceptual a
 
 ### 1. Installation
 
-DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), but we'll use the development version on [GitHub](https://github.com/IvanWilli/DemoKin):
-
-```{r, eval=FALSE}
-# If you haven't done this already
-# install.packages("devtools")
-devtools::install_github("IvanWilli/DemoKin")
-```
-
 Load packages that will be useful:
 
 ```{r, warning=F, message=FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(readr)
+library(knitr)
 library(DemoKin)
 ```
 
@@ -230,25 +238,10 @@ head(kin_2020$kin_full)
 ##### `kin_summary`
 
 This is a 'summary' data frame derived from `kin_full`. To produce it, we sum over all ages of kin to produce a data frame of expected kin counts by year or cohort and age of Focal (but *not* by age of kin). 
-This is how the `kin_summary` object is derived:
 
-```{r 26, message=F}
 
-kin_by_age_focal <- 
-  kin_2020$kin_full %>% 
-  group_by(kin, age_focal) %>% 
-  summarise(count = sum(living)) %>% 
-  ungroup()
-
-# Check that they are identical (for living kin only here)
-
-kin_by_age_focal %>% 
-  select(kin, age_focal, count) %>% 
-  identical(
-    kin_2020$kin_summary %>% 
-      select(kin, age_focal, count = count_living) %>% 
-      arrange(kin, age_focal)
-  )
+```{r 25}
+head(kin_2020$kin_summary)
 ```
 
 #### 3.2. Kinship diagrams
@@ -842,6 +835,7 @@ These packages will be used:
 ```{r}
 # Load necessary libraries
 library(dplyr)
+library(tidyr)
 library(data.table)
 ```
 
@@ -912,7 +906,7 @@ rates_female <-
   filter(Sex == "Female")
 
 rates_male <- 
-  rates %>% 
+  mort_both %>% 
   filter(Sex == "Male")
 ```
 
