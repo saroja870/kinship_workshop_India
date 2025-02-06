@@ -231,7 +231,7 @@ str(kin_2020)
 
 This data frame contains expected kin counts by year (or cohort), age of Focal, type of kin and, age of kin, including living and dead kin at that age.
 
-```{r 25}
+```{r}
 head(kin_2020$kin_full)
 ```
 
@@ -240,7 +240,7 @@ head(kin_2020$kin_full)
 This is a 'summary' data frame derived from `kin_full`. To produce it, we sum over all ages of kin to produce a data frame of expected kin counts by year or cohort and age of Focal (but *not* by age of kin). 
 
 
-```{r 25}
+```{r}
 head(kin_2020$kin_summary)
 ```
 
