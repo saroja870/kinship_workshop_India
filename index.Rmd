@@ -15,6 +15,7 @@ bibliography: kinship.bib
 ---
 
 ```{r 1 setup, include=FALSE}
+install.packages("knitr")
 knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE, 
                       warning = FALSE, 
@@ -245,7 +246,7 @@ This is a 'summary' data frame derived from `kin_full`. To produce it, we sum ov
 head(kin_2020$kin_summary)
 ```
 
-#### 3.2. Kinship diagrams
+#### 3.5. Kinship diagrams
 
 We can visualize the kinship structure we just computed using a network or 'Keyfitz' kinship diagram [@Keyfitz2005] with the `plot_diagram` function. 
 Let's see the expected number of living kin for a 65 yo woman in Singapore according to our model:
@@ -257,7 +258,7 @@ kin_2020$kin_summary %>%
   plot_diagram(rounding = 2)
 ```
 
-#### 3.3. Number of living kin
+#### 3.6. Number of living kin
 
 Let's run the model again with the same parameters, selecting specific kin types (note the `output_kin` argument:
 
@@ -307,7 +308,7 @@ kin_2020$kin_summary %>%
   theme(legend.position = "bottom")
 ```
 
-#### 3.4 Age distribution of living kin
+#### 3.7 Age distribution of living kin
 
 How old are Focal's relatives? Using the `kin_full` data frame, we can visualize the age distribution of Focal's relatives throughout Focal's life. For example when Focal is 65 (the red vertical line in the plot), what are the ages of her relatives:
 
@@ -907,7 +908,7 @@ rates_female <-
   filter(Sex == "Female")
 
 rates_male <- 
-  mort_both %>% 
+  mort_both %>%  
   filter(Sex == "Male")
 ```
 
