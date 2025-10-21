@@ -1,7 +1,7 @@
 ---
-title: "Kinship Dynamics: Concept, Modelling, and Applications"
-subtitle: "National University of Singapore, Singapore, February 5, 2025"
-author: "Instructors: Diego Alburez-Gutierrez & Sha Jiang"
+title: "An introduction to the analysis of population-level kinship structures"
+subtitle: "IIPS, Mumbai, India, November 24-27, 2025"
+author: "Instructors: Diego Alburez-Gutierrez & Saroja Adhikari"
 date: "Updated: `r Sys.Date()`"
 output:
   html_document:
@@ -15,7 +15,7 @@ bibliography: kinship.bib
 ---
 
 ```{r 1 setup, include=FALSE}
-install.packages("knitr")
+# install.packages("knitr")
 knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE, 
                       warning = FALSE, 
@@ -24,6 +24,7 @@ knitr::opts_chunk$set(echo = TRUE,
 # Prevent scientific notation (useful for the rate calculation)
 options(scipen=999999)
 ```
+
 
 
 # {.tabset}
@@ -41,7 +42,7 @@ install.packages("dplyr")
 install.packages("tidyr")
 install.packages("ggplot2")
 install.packages("readr")
-install.packages("knitr")
+# install.packages("knitr")
 install.packages("data.table")
 install.packages("Matrix")
 # DemoKin is available on [CRAN](https://cran.r-project.org/web/packages/DemoKin/index.html), 
@@ -61,7 +62,7 @@ library(knitr)
 library(DemoKin)
 ```
 
-1. Download the workshop's GitHub repository to your computer: https://github.com/alburezg/kinship_workshop_NUS. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
+1. Download the workshop's GitHub repository to your computer: https://github.com/saroja870/kinship_workshop_india. The easiest way is by clicking on `< > Code` and then `Download ZIP`, as shown below:
 
 ![](download.JPG){width=800px}
 
@@ -104,15 +105,15 @@ source("functions.R")
 
 ### 2. Demographic data
 
-We will use data for Singapore from the [2024 Revision of the World Population Prospects](https://population.un.org/wpp/), which we pre-processed for this workshop.
+We will use data for India from the [2024 Revision of the World Population Prospects](https://population.un.org/wpp/), which we pre-processed for this workshop.
 
 ```{r, warning=FALSE, message=FALSE}
 #Load data for women
-rates_female <- read.csv("data/sgp_female.csv", stringsAsFactors = F) #female rates
-pop_female <- read.csv("data/sgp_popfemale.csv", stringsAsFactors = F) #female population (N)
+rates_female <- read.csv("data/ind_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/ind_popfemale.csv", stringsAsFactors = F) #female population (N)
 # For data for men
-rates_male <- read.csv("data/sgp_male.csv", stringsAsFactors = F) # male rates
-pop_male <- read.csv("data/sgp_popmale.csv", stringsAsFactors = F) # male population (N)
+rates_male <- read.csv("data/ind_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/ind_popmale.csv", stringsAsFactors = F) # male population (N)
 ```
 
 Let's see what data we will be using. The first object is `rates_female`, a long-format data frame with year- and age-specific fertility rates ('fx') and survival probabilities from a life table ('px'). 
@@ -249,7 +250,7 @@ head(kin_2020$kin_summary)
 #### 3.5. Kinship diagrams
 
 We can visualize the kinship structure we just computed using a network or 'Keyfitz' kinship diagram [@Keyfitz2005] with the `plot_diagram` function. 
-Let's see the expected number of living kin for a 65 yo woman in Singapore according to our model:
+Let's see the expected number of living kin for a 65 yo woman in India according to our model:
 
 ```{r 10, fig.height=10, fig.width=12}
 kin_2020$kin_summary %>% 
@@ -351,11 +352,11 @@ Load male and female data (restricting it to data in the 1950-2023 period):
 
 ```{r, warning=F, message=FALSE}
 #Load data for women
-rates_female <- read.csv("data/sgp_female.csv", stringsAsFactors = F) #female rates
-pop_female <- read.csv("data/sgp_popfemale.csv", stringsAsFactors = F) #female population (N)
+rates_female <- read.csv("data/ind_female.csv", stringsAsFactors = F) #female rates
+pop_female <- read.csv("data/ind_popfemale.csv", stringsAsFactors = F) #female population (N)
 # For data for men
-rates_male <- read.csv("data/sgp_male.csv", stringsAsFactors = F) # male rates
-pop_male <- read.csv("data/sgp_popmale.csv", stringsAsFactors = F) # male population (N)
+rates_male <- read.csv("data/ind_male.csv", stringsAsFactors = F) # male rates
+pop_male <- read.csv("data/ind_popmale.csv", stringsAsFactors = F) # male population (N)
 ```
 
 Since we're not running projections (yet), we'll keep only data in the 1950-2023 period:
@@ -580,6 +581,7 @@ kin_out$kin_full %>%
   facet_wrap(.~kin_label)
 ```
 
+
 ## Part 3: Projections of kinship by education
 
 ### 1. Setup
@@ -605,7 +607,7 @@ This function computes stage-specific kinship networks across both sexes for an 
 
 ### 3. Data
 
-In this example we use education as an example stage. Singaporean data ranging from 2020 - 2090 is sourced from the [Wittgenstein Center](https://www.wittgensteincentre.org/en/index.htm). The data is aggregated into 5-year age group and 5-year time interval.
+In this example we use education as an example stage. Indian data ranging from 2020 - 2090 is sourced from the [Wittgenstein Center](https://www.wittgensteincentre.org/en/index.htm). The data is aggregated into 5-year age group and 5-year time interval.
 
 In order to implement the model, the function `kin_multi_stage_time_variant_2sex` expects the following 7 inputs of vital rates, fed in as lists:
 
@@ -631,7 +633,7 @@ Thus for each year, we have a list of age-specific probabilities of moving from 
 We pre-processed the data for this workshop:
 
 ```{r eval=TRUE, message=FALSE, warning=FALSE, include=TRUE}
-load("data/singapore_edu.rdata")
+load("data/india_edu.rdata")
 ```
 
 ### 4. Run multistate kinship model
@@ -657,7 +659,7 @@ kin_out_2020_2090 <-
                                     T_list_females = T_mat_fem_edu[1:(1+no_years)],
                                     T_list_males = T_mat_fem_edu[1:(1+no_years)],
                                     H_list = H_mat_edu[1:(1+no_years)],
-                                    birth_female = 1/(1.06+1), ## Sex ratio at birth -- Singapore value (1.06)
+                                    birth_female = 1/(1.06+1), ## Sex ratio at birth --  (1.06)
                                     parity = FALSE,
                                     summary_kin = TRUE,
                                     sex_Focal = "Female", ##  define Focal's sex at birth
@@ -676,7 +678,7 @@ kin_out_2020_2090$kin_summary <-
   mutate(year = (year-1)*5+min(time_range),
          age_focal = age_focal*5,
          cohort = year - age_focal,
-         stage_kin = factor(stage_kin, levels = c(1, 2, 3, 4, 5, 6),
+          stage_kin = factor(stage_kin, levels = c(1, 2, 3, 4, 5, 6),
                        labels = c(
                          "no education",
                          "incomplete primary",
@@ -709,12 +711,12 @@ Notice the structure of the output data `kin_summary`. We have columns `age_foca
 Let's take a look at `kin_summary` by selecting 10 rows, from row 1000 to row 1010. 
 
 ```{r, message=FALSE, warning=FALSE}
-kin_out_2020_2090$kin_summary[1000:1010, ]
+kin_out_2020_2090$kin_summary[1000:1020, ]
 ```
 
 #### 5.1. Cohort approach
 
-We start by showing the number of living kin for an average woman born in 2020 in Singapore by level of educational attainment of her kin: 
+We start by showing the number of living kin for an average woman born in 2020 in India by level of educational attainment of her kin: 
 
 ```{r, fig.height=6, fig.width=8}
 
@@ -823,7 +825,7 @@ We note that there are following simplifying assumptions due to data limitations
 
 1. Fertility rates vary over time and by education level but are identical for both sexes (the androgynous approximation).
 2. Age-specific education transition probabilities vary over time but not by sex (also an androgynous approximation).
-3. Since no transition data exist beyond age 10, we assume that at ages 0-4, individuals transition from no education to incomplete primary in the next 5-year interval, and at ages 5-9, they transition from incomplete primary to primary (based on Singapore's Compulsory Education Act).
+3. Since no transition data exist beyond age 10, we assume that at ages 0-4, individuals transition from no education to incomplete primary in the next 5-year interval, and at ages 5-9, they transition from incomplete primary to primary (based on India's Compulsory Education Act).
 4. Demographic rates remain stable (time-invariant) before 2020, the earliest observed data point.
 
 ## Part 4: Other countries
