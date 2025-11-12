@@ -70,11 +70,12 @@ library(DemoKin)
 
 ### 2. Agenda (preliminary)
 
-![](agenda.JPG){width=500px}
+![](agenda.JPG){width=900px}
 
 ### 3. Acknowledgements
 
-This workshop includes material from the course [Matrix Approaches to Modelling Kinship: Theory and Applications](https://ivanwilli.github.io/matrix_kinship_course_lab/index) prepared by [Ivan Williams](https://github.com/IvanWilli) and adapted by [Amanda Martins](https://www.demogr.mpg.de/en/about_us_6113/staff_directory_1899/amanda_martins_4265/) for the [European Doctoral School of Demography](https://amandamartinsal.github.io/EDSD_kinship_24-25/) and for the [ALAP 2024 Conference](https://amandamartinsal.github.io/ALAP24_parentesco/). The multistate code was adapted from the corresponding [vignette](https://github.com/IvanWilli/DemoKin/blob/main/vignettes/Reference_TwoSex_MultiState_TimeVariant.Rmd) in `DemoKin` contributed by [Joe Butterick](https://www.cpc.ac.uk/about_us/the_team/2047/Joe_Barrass_Butterick) and adapted to the case of Singapore by [Sha Jiang](https://www.demogr.mpg.de/en/about_us_6113/staff_directory_1899/sha_jiang_4369/). [Saroja Adhikari](https://www.demogr.mpg.de/de/ueber_uns_6113/mitarbeiter_innen_1899/saroja_adhikari_4434/) provided support with the Wittgenstein educational data.
+This workshop includes material from the course [Matrix Approaches to Modelling Kinship: Theory and Applications](https://ivanwilli.github.io/matrix_kinship_course_lab/index) prepared by [Ivan Williams](https://github.com/IvanWilli) and adapted by [Amanda Martins](https://www.demogr.mpg.de/en/about_us_6113/staff_directory_1899/amanda_martins_4265/) for the [European Doctoral School of Demography](https://amandamartinsal.github.io/EDSD_kinship_24-25/) and for the [ALAP 2024 Conference](https://amandamartinsal.github.io/ALAP24_parentesco/). The multistate code was adapted from the corresponding [vignette](https://github.com/IvanWilli/DemoKin/blob/main/vignettes/Reference_TwoSex_MultiState_TimeVariant.Rmd) in `DemoKin` contributed by [Joe Butterick](https://www.cpc.ac.uk/about_us/the_team/2047/Joe_Barrass_Butterick) and adapted to the case Singapore by [Sha Jiang](https://www.demogr.mpg.de/en/about_us_6113/staff_directory_1899/sha_jiang_4369/). and for India by [Saroja Adhikari](https://www.demogr.mpg.de/de/ueber_uns_6113/mitarbeiter_innen_1899/saroja_adhikari_4434/) using the Wittgenstein educational data.
+
 
 For a full list of `DemoKin` contributors, see https://github.com/IvanWilli/DemoKin. 
 
@@ -684,8 +685,8 @@ kin_out_2020_2090$kin_summary <-
                          "incomplete primary",
                          "primary",
                          "lower secondary",
-                         "upper secondary",
-                         "post-secondary"
+                         "upper secondary & above",
+                         "upper secondary & above"
                        )))
 
 kin_out_2020_2090$kin_full <- kin_out_2020_2090$kin_full%>%
@@ -699,8 +700,8 @@ kin_out_2020_2090$kin_full <- kin_out_2020_2090$kin_full%>%
                          "incomplete primary",
                          "primary",
                          "lower secondary",
-                         "upper secondary",
-                         "post-secondary"
+                         "upper secondary & above",
+                         "upper secondary & above"
                        )))
 ```
 
@@ -825,7 +826,7 @@ We note that there are following simplifying assumptions due to data limitations
 
 1. Fertility rates vary over time and by education level but are identical for both sexes (the androgynous approximation).
 2. Age-specific education transition probabilities vary over time but not by sex (also an androgynous approximation).
-3. Since no transition data exist beyond age 10, we assume that at ages 0-4, individuals transition from no education to incomplete primary in the next 5-year interval, and at ages 5-9, they transition from incomplete primary to primary (based on India's Compulsory Education Act).
+3. Since no transition data exist beyond age 10, we assume that at ages 0-4, individuals transition from no education to incomplete primary in the next 5-year interval, and at ages 5-9, they transition from incomplete primary to primary (based on India's Compulsory Education Act 2009).
 4. Demographic rates remain stable (time-invariant) before 2020, the earliest observed data point.
 
 ## Part 4: Other countries
